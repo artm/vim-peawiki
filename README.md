@@ -8,6 +8,22 @@ A simpler approach to vim-wiki then [soywiki][]
 - Use tag files for hyperlinks
 - Highlight tags
 
+## Status
+
+Proof of concept and very primitive implementation.
+
+## Using peawiki
+
+At the moment the plugin assumes that wiki pages are files in `~/notes/`
+with extension `.md`. Eventually this may become configurable.
+
+Every such file becomes wiki-linkable, each verbatim mention of the file
+will be highlighted as `peaTag` highlighting group (by default the same
+as `Underlined`, which makes it appear the same color as markdown links).
+
+Links are implemented as tags, so to follow a link press `Ctrl+]`, to
+return press `Ctrl+t`. 
+
 ## TODO
 
 - git for history
