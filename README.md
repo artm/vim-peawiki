@@ -36,6 +36,9 @@ to it in normal mode and press `Ctrl+]` as if to go to an existing page.
 A new page will be created with default content (A single header
 consisting of the page name).
 
+New page can be aborted with `:bw!`. It wasn't written yet so it won't
+end up in git repo too early.
+
 ### Delete page
 
 To delete a page:
