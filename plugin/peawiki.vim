@@ -9,6 +9,10 @@ let g:loaded_peawiki = 1
 let g:PeaDir = $HOME . '/notes'
 let s:PageNameRe = '\(.*\/\)\?\([^/]\+\)\.md$'
 
+fu! s:PathToTag(path)
+  return substitute( a:path, s:PageNameRe, '\2', '' )
+endf
+
 " lst is a list of files
 fu! s:HighlightTags()
   let tags = taglist('.*')
@@ -25,7 +29,7 @@ fu! s:UpdateTagsIfNew()
     let lst = split(glob( g:PeaDir . "/*.md"),"\n")
 
     " write tag list
-    call map( lst, 'substitute(v:val, s:PageNameRe, ''\1\t\0\t1'', '''')')
+    call map( lst, 's:PathToTag(v:val) . "\t" . v:val . "\t1"')
     call sort( lst )
     call writefile( lst, g:PeaDir . '/tags' )
 
@@ -47,9 +51,8 @@ endf
 fu! s:OnSave()
   call s:EnsureHasGit()
   let file = expand('%')
-  let tag = substitute( file, s:PageNameRe, '''\2''', '' )
-  let cmd = 'cd ' . g:PeaDir . ' && git add ' . file . ' && git commit -m "edited ' . tag . '"'
-  echo cmd
+  let tag = s:PathToTag(file)
+  let cmd = 'cd ' . g:PeaDir . ' && git add ' . file . ' && git commit -m "edited ''' . tag . '''"'
   call system(cmd)
 endf
 
