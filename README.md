@@ -34,7 +34,8 @@ return press `Ctrl+t`.
   - subst in all .md files (complete word OldTag to NewTag)
 - page delete
   - "are you sure?"
-  - regenerate tags
-  - remove from git
+    - on the other hand all is in the repo, why bother
+  - DONE regenerate tags
+  - DONE remove from git
 
 

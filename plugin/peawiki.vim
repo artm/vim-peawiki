@@ -7,35 +7,39 @@ if exists("g:loaded_peawiki") || &cp || v:version < 700
 endif
 let g:loaded_peawiki = 1
 let g:PeaDir = $HOME . '/notes'
-let s:PageNameRe = '\(.*\/\)\?\([^/]\+\)\.md$'
+let s:PeageNameRe = '\(.*\/\)\?\([^/]\+\)\.md$'
 
 fu! s:PathToTag(path)
-  return substitute( a:path, s:PageNameRe, '\2', '' )
+  return substitute( a:path, s:PeageNameRe, '\2', '' )
 endf
 
 " lst is a list of files
 fu! s:HighlightTags()
+  syntax clear peage
   let tags = taglist('.*')
   for tag in tags
-    exec "syntax keyword peaTag " . tag["name"]
+    exec "syntax keyword peage " . tag["name"]
   endfor
+endf
+
+fu! s:UpdateTags()
+  let lst = split(glob( g:PeaDir . "/*.md"),"\n")
+
+  " write tag list
+  call map( lst, 's:PathToTag(v:val) . "\t" . v:val . "\t1"')
+  call sort( lst )
+  call writefile( lst, g:PeaDir . '/tags' )
+
+  " update tag highlights
+  bufdo if match(expand('%'),'\.md') | call s:HighlightTags() | endif
+call s:HighlightTags()
 endf
 
 " Regenerate tags file
 fu! s:UpdateTagsIfNew()
   if exists('b:isNew') && b:isNew
     let b:isNew = 0
-
-    let lst = split(glob( g:PeaDir . "/*.md"),"\n")
-
-    " write tag list
-    call map( lst, 's:PathToTag(v:val) . "\t" . v:val . "\t1"')
-    call sort( lst )
-    call writefile( lst, g:PeaDir . '/tags' )
-
-    " update tag highlights
-    bufdo if match(expand('%'),'\.md') | call s:HighlightTags() | endif
-    call s:HighlightTags()
+    call s:UpdateTags()
   endif
 endf
 
@@ -49,6 +53,7 @@ fu! s:EnsureHasGit()
 endf
 
 fu! s:OnSave()
+  call s:UpdateTagsIfNew()
   call s:EnsureHasGit()
   let file = expand('%')
   let tag = s:PathToTag(file)
@@ -56,12 +61,31 @@ fu! s:OnSave()
   call system(cmd)
 endf
 
+fu! DeletePeage()
+  let file = expand('%')
+  call s:EnsureHasGit()
+  let tag = s:PathToTag(file)
+  let cmd = 'cd ' . g:PeaDir . ' && git rm ' . file . ' && git commit -m "removed ''' . tag . '''"'
+  echo cmd
+  call system(cmd)
+  bw
+  exec "vimgrep " . tag . " " . g:PeaDir . "/*.md"
+  call s:UpdateTags()
+  cwindow
+endf
+
+fu! s:PeaSetup()
+  call s:HighlightTags()
+  command! -buffer DeletePeage call DeletePeage()
+endf
+
 augroup peawiki
   au!
-  exec 'au BufNewFile ' . g:PeaDir . '/*.md let b:isNew = 1 | call s:HighlightTags()'
-  exec 'au BufNew,BufRead ' . g:PeaDir . '/*.md call s:HighlightTags()'
-  exec 'au BufWritePost ' . g:PeaDir . '/*.md call s:UpdateTagsIfNew() | call s:OnSave()'
+  exec 'au BufNewFile ' . g:PeaDir . '/*.md let b:isNew = 1 | call s:PeaSetup()'
+  exec 'au BufNew,BufRead ' . g:PeaDir . '/*.md call s:PeaSetup()'
+  exec 'au BufWritePost ' . g:PeaDir . '/*.md call s:OnSave()'
 augroup END
 
-hi link peaTag Underlined
+
+hi link peage Underlined
 
