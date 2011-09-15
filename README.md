@@ -29,7 +29,14 @@ as `Underlined`, which makes it appear the same color as markdown links).
 Links are implemented as tags, so to follow a link press `Ctrl+]`, to
 return press `Ctrl+t`. 
 
-### Delete Page
+### Create a new page
+
+Either `:new ~/notes/PAGENAME.md` or type in the page name, move cursor
+to it in normal mode and press `Ctrl+]` as if to go to an existing page.
+A new page will be created with default content (A single header
+consisting of the page name).
+
+### Delete page
 
 To delete a page:
 
@@ -38,7 +45,7 @@ To delete a page:
 - after the page is deleted vim will search for all mentions of it with
   `:vimgrep` and present quick fix window for review
 
-### Rename Page
+### Rename page
 
 To rename a page:
 
