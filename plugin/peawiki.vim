@@ -7,6 +7,7 @@ if exists("g:loaded_peawiki") || &cp || v:version < 700
 endif
 let g:loaded_peawiki = 1
 let g:PeaDir = $HOME . '/notes'
+let s:PageNameRe = '\(.*\/\)\?\([^/]\+\)\.md$'
 
 " lst is a list of files
 fu! s:HighlightTags()
@@ -24,7 +25,7 @@ fu! s:UpdateTagsIfNew()
     let lst = split(glob( g:PeaDir . "/*.md"),"\n")
 
     " write tag list
-    call map( lst, 'substitute(v:val, ''.*/\([^/]\+\).md$'', ''\1\t\0\t1'', '''')')
+    call map( lst, 'substitute(v:val, s:PageNameRe, ''\1\t\0\t1'', '''')')
     call sort( lst )
     call writefile( lst, g:PeaDir . '/tags' )
 
@@ -34,11 +35,29 @@ fu! s:UpdateTagsIfNew()
   endif
 endf
 
+fu! s:EnsureHasGit()
+  if !isdirectory(g:PeaDir)
+    call mkdir(g:PeaDir)
+  endif
+  if !isdirectory(g:PeaDir . "/.git")
+    call system('cd ' . g:PeaDir . ' && git init')
+  endif
+endf
+
+fu! s:OnSave()
+  call s:EnsureHasGit()
+  let file = expand('%')
+  let tag = substitute( file, s:PageNameRe, '''\2''', '' )
+  let cmd = 'cd ' . g:PeaDir . ' && git add ' . file . ' && git commit -m "edited ' . tag . '"'
+  echo cmd
+  call system(cmd)
+endf
+
 augroup peawiki
   au!
   exec 'au BufNewFile ' . g:PeaDir . '/*.md let b:isNew = 1 | call s:HighlightTags()'
   exec 'au BufNew,BufRead ' . g:PeaDir . '/*.md call s:HighlightTags()'
-  exec 'au BufWritePost ' . g:PeaDir . '/*.md call s:UpdateTagsIfNew()'
+  exec 'au BufWritePost ' . g:PeaDir . '/*.md call s:UpdateTagsIfNew() | call s:OnSave()'
 augroup END
 
 hi link peaTag Underlined

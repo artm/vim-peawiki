@@ -27,6 +27,7 @@ return press `Ctrl+t`.
 ## TODO
 
 - git for history
+  - DONE autoinitialization, commit on save
 - refactoring: page rename
   - rename tag in tags
   - rename in git
