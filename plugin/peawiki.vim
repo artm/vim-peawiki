@@ -66,12 +66,29 @@ fu! DeletePeage()
   call s:EnsureHasGit()
   let tag = s:PathToTag(file)
   let cmd = 'cd ' . g:PeaDir . ' && git rm ' . file . ' && git commit -m "removed ''' . tag . '''"'
-  echo cmd
   call system(cmd)
-  bw
+  bwipe
   call s:UpdateTags()
   exec "vimgrep " . tag . " " . g:PeaDir . "/*.md"
   cwindow
+endf
+
+fu! RenamePeage(newTag)
+  let file = expand('%')
+  call s:EnsureHasGit()
+  let tag = s:PathToTag(file)
+  let newFile = g:PeaDir . '/' . a:newTag . '.md'
+  write
+  bwipe
+  let cmd = 'cd ' . g:PeaDir . ' && git mv ' . file . ' ' . newFile . ' && git commit -m "renamed ''' . tag . ''' to ''' . a:newTag . '''"'
+  call system(cmd)
+  call s:UpdateTags()
+  exec 'vi ' . newFile
+  exec 'args ' . g:PeaDir . '/*.md'
+  exec 'argdo %s/' . tag . '/' . a:newTag . '/gec | update' 
+  let cmd = 'cd ' . g:PeaDir . ' && git commit --amend -m "renamed ''' . tag . ''' to ''' . a:newTag . '''"'
+  call system(cmd)
+  exec 'vi ' . a:newTag . '.md'
 endf
 
 fu! GotoOrCreatePeage()
@@ -87,6 +104,7 @@ endf
 fu! s:PeaSetup()
   call s:HighlightTags()
   command! -buffer DeletePeage call DeletePeage()
+  command! -buffer -nargs=1 RenamePeage call RenamePeage(<f-args>)
   nmap <C-]> :call GotoOrCreatePeage()<CR>
 endf
 
