@@ -28,7 +28,7 @@ return press `Ctrl+t`.
 
 - git for history
   - DONE autoinitialization, commit on save
-- refactoring: page rename
+- wiki refactoring: page rename
   - rename tag in tags
   - rename in git
   - subst in all .md files (complete word OldTag to NewTag)

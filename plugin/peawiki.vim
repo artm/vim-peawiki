@@ -69,14 +69,25 @@ fu! DeletePeage()
   echo cmd
   call system(cmd)
   bw
-  exec "vimgrep " . tag . " " . g:PeaDir . "/*.md"
   call s:UpdateTags()
+  exec "vimgrep " . tag . " " . g:PeaDir . "/*.md"
   cwindow
+endf
+
+fu! GotoOrCreatePeage()
+  let tag = expand('<cword>')
+  if len(taglist(tag)) 
+    exec 'tag ' . tag
+  else
+    exec 'new ' . g:PeaDir . '/' . tag . '.md'
+    exec "norm i# " . tag . "\<ESC>o\<CR>"
+  endif
 endf
 
 fu! s:PeaSetup()
   call s:HighlightTags()
   command! -buffer DeletePeage call DeletePeage()
+  nmap <C-]> :call GotoOrCreatePeage()<CR>
 endf
 
 augroup peawiki
