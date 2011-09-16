@@ -1,6 +1,6 @@
 # PeaWiki
 
-A simpler approach to vim-wiki than [soywiki][]
+A simpler approach to vim-wiki than [soywiki][].
 
 [soywiki]: https://github.com/danchoi/soywiki
 
@@ -16,6 +16,16 @@ A simpler approach to vim-wiki than [soywiki][]
 ## Status
 
 Proof of concept and very primitive implementation.
+
+## Installation
+
+Either copy `plugins/peawiki.vim` to `~/.vim/plugins` or if using
+[pathogen][]:
+
+    cd ~/.vim/bundle
+    git clone git@github.com:artm/vim-peawiki.git peawiki
+
+[pathogen]: https://github.com/tpope/vim-pathogen
 
 ## Using peawiki
 
