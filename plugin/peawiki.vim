@@ -111,7 +111,7 @@ fu! RenamePeage(newTag)
   call s:UpdateTags()
   exec 'args ' . PeaFile('*')
   exec 'argdo %s/' . tag . '/' . a:newTag . '/gec | update' 
-  call s:DoGit("git commit --amend -m \"renamed '%t' to '" . a:newTag . "'\"")
+  call s:DoGit("git commit -a --amend -m \"renamed '%t' to '" . a:newTag . "'\"")
 
   exec 'vi ' . newFile
 endf
