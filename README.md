@@ -1,6 +1,6 @@
 # PeaWiki
 
-A simpler approach to vim-wiki then [soywiki][]
+A simpler approach to vim-wiki than [soywiki][]
 
 [soywiki]: https://github.com/danchoi/soywiki
 
@@ -57,4 +57,3 @@ To rename a page:
 - after the page is renamed vim will search for all mentions of it with
   `:argdo %s/OLD_NAME/NEW_NAME/gec` and ask to confirm each
   substitution.
-
