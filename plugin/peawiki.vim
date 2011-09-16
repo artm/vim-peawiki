@@ -6,11 +6,23 @@ if exists("g:loaded_peawiki") || &cp || v:version < 700
   finish
 endif
 let g:loaded_peawiki = 1
+
+let s:cpo_save = &cpo " store compatible-mode in local variable
+set cpo&vim             " go into nocompatible-mode
+
 let g:PeaDir = $HOME . '/notes'
 let s:PeageNameRe = '\(.*\/\)\?\([^/]\+\)\.md$'
 
-fu! s:PathToTag(path)
+fu! s:PeaTag(path)
   return substitute( a:path, s:PeageNameRe, '\2', '' )
+endf
+
+fu! s:PeaFile0(tag)
+  return g:PeaDir . '/' . a:tag
+endf
+
+fu! PeaFile(tag)
+  return s:PeaFile0(a:tag) . '.md'
 endf
 
 " lst is a list of files
@@ -23,21 +35,25 @@ fu! s:HighlightTags()
 endf
 
 fu! s:UpdateTags()
-  let lst = split(glob( g:PeaDir . "/*.md"),"\n")
+  let lst = split(glob( PeaFile('*')),"\n")
 
   " write tag list
-  call map( lst, 's:PathToTag(v:val) . "\t" . v:val . "\t1"')
+  call map( lst, 's:PeaTag(v:val) . "\t" . v:val . "\t1"')
   call sort( lst )
-  call writefile( lst, g:PeaDir . '/tags' )
+  call writefile( lst, s:PeaFile0('tags') )
 
   " update tag highlights
   bufdo if match(expand('%'),'\.md') | call s:HighlightTags() | endif
 call s:HighlightTags()
 endf
 
+fu! s:IsNew()
+  return exists('b:isNew') && b:isNew
+endf
+
 " Regenerate tags file
 fu! s:UpdateTagsIfNew()
-  if exists('b:isNew') && b:isNew
+  if s:IsNew()
     let b:isNew = 0
     call s:UpdateTags()
   endif
@@ -47,48 +63,57 @@ fu! s:EnsureHasGit()
   if !isdirectory(g:PeaDir)
     call mkdir(g:PeaDir)
   endif
-  if !isdirectory(g:PeaDir . "/.git")
+  if !isdirectory(s:PeaFile0('.git'))
     call system('cd ' . g:PeaDir . ' && git init')
   endif
 endf
 
+fu! s:DoGit(cmd, ...)
+  if a:0 == 0
+    let file = expand('%')
+    let tag = s:PeaTag(file)
+  elseif match(a:1, '\.md$')
+    let file = a:1
+    let tag = s:PeaTag(file)
+  else
+    let tag = a:1
+    let file = PeaFile(tag)
+  endif
+
+  call s:EnsureHasGit()
+  let cmd = 'cd ' . g:PeaDir . ' && ' . a:cmd
+  let cmd = substitute(cmd, '%t', tag, "g")
+  let cmd = substitute(cmd, '%f', file, "g")
+  call system(cmd)
+
+  return tag
+endf
+
 fu! s:OnSave()
   call s:UpdateTagsIfNew()
-  call s:EnsureHasGit()
-  let file = expand('%')
-  let tag = s:PathToTag(file)
-  let cmd = 'cd ' . g:PeaDir . ' && git add ' . file . ' && git commit -m "edited ''' . tag . '''"'
-  call system(cmd)
+  call s:DoGit("git add %f && git commit -m \"edited '%t'\"")
 endf
 
 fu! DeletePeage()
-  let file = expand('%')
-  call s:EnsureHasGit()
-  let tag = s:PathToTag(file)
-  let cmd = 'cd ' . g:PeaDir . ' && git rm ' . file . ' && git commit -m "removed ''' . tag . '''"'
-  call system(cmd)
+  let tag = s:DoGit("git rm %f && git commit -m \"removed '%t'\"")
+
   bwipe
   call s:UpdateTags()
-  exec "vimgrep " . tag . " " . g:PeaDir . "/*.md"
+  exec "vimgrep " . tag . " " . PeaFile('*')
   cwindow
 endf
 
 fu! RenamePeage(newTag)
-  let file = expand('%')
-  call s:EnsureHasGit()
-  let tag = s:PathToTag(file)
-  let newFile = g:PeaDir . '/' . a:newTag . '.md'
+  let newFile = PeaFile(a:newTag)
   write
+  let tag = s:DoGit("git mv %f " . newFile . " && git commit -m \"renamed '%t' to '" . a:newTag . "'\"")
   bwipe
-  let cmd = 'cd ' . g:PeaDir . ' && git mv ' . file . ' ' . newFile . ' && git commit -m "renamed ''' . tag . ''' to ''' . a:newTag . '''"'
-  call system(cmd)
   call s:UpdateTags()
-  exec 'vi ' . newFile
-  exec 'args ' . g:PeaDir . '/*.md'
+  exec 'args ' . PeaFile('*')
   exec 'argdo %s/' . tag . '/' . a:newTag . '/gec | update' 
-  let cmd = 'cd ' . g:PeaDir . ' && git commit --amend -m "renamed ''' . tag . ''' to ''' . a:newTag . '''"'
-  call system(cmd)
-  exec 'vi ' . a:newTag . '.md'
+  call s:DoGit("git commit --amend -m \"renamed '%t' to '" . a:newTag . "'\"")
+
+  exec 'vi ' . newFile
 endf
 
 fu! GotoOrCreatePeage()
@@ -96,7 +121,7 @@ fu! GotoOrCreatePeage()
   if len(taglist(tag)) 
     exec 'tag ' . tag
   else
-    exec 'new ' . g:PeaDir . '/' . tag . '.md'
+    exec 'new ' . PeaFile(tag)
     exec "norm i# " . tag . "\<ESC>o\<CR>"
   endif
 endf
@@ -110,11 +135,14 @@ endf
 
 augroup peawiki
   au!
-  exec 'au BufNewFile ' . g:PeaDir . '/*.md let b:isNew = 1 | call s:PeaSetup()'
-  exec 'au BufNew,BufRead ' . g:PeaDir . '/*.md call s:PeaSetup()'
-  exec 'au BufWritePost ' . g:PeaDir . '/*.md call s:OnSave()'
+  exec 'au BufNewFile ' . PeaFile('*') . ' let b:isNew = 1 | call s:PeaSetup()'
+  exec 'au BufNew,BufRead ' . PeaFile('*') . ' call s:PeaSetup()'
+  exec 'au BufWritePost ' . PeaFile('*') . ' call s:OnSave()'
 augroup END
 
+nmap <Leader>h :exec 'vi ' . PeaFile('Home') <CR>
 
 hi link peage Underlined
 
+" restore compatible mode
+let &cpo = s:cpo_save
